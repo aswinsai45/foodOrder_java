@@ -1,102 +1,86 @@
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class Main {
-
     public static void main(String[] args) {
-        // Create the JFrame
-        JFrame frame = new JFrame("Enter Name");
+        // Create a new frame
+        JFrame frame = new JFrame("Order Form");
+        frame.setSize(300, 200);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 200);
-        frame.setLayout(new BorderLayout());
+        frame.setLayout(null);
 
-        // Create a panel for content
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(50, 50, 50));
-        panel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        // Label and text field for "user"
+        JLabel userLabel = new JLabel("User:");
+        userLabel.setBounds(20, 20, 80, 25);
+        frame.add(userLabel);
 
-        // Create a label for the text field
-        JLabel label = new JLabel("Enter Name:");
-        label.setForeground(Color.WHITE);
-        label.setFont(new Font("Arial", Font.BOLD, 16));
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JTextField userText = new JTextField(20);
+        userText.setBounds(100, 20, 165, 25);
+        frame.add(userText);
 
-        // Create the text field to enter the name
-        JTextField nameField = new JTextField(20);
-        nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        nameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Label and text field for "phone"
+        JLabel phoneLabel = new JLabel("Phone:");
+        phoneLabel.setBounds(20, 60, 80, 25);
+        frame.add(phoneLabel);
 
-        // Create the button to save the name
-        JButton saveButton = new JButton("Save Name");
-        saveButton.setFont(new Font("Arial", Font.PLAIN, 16));
-        saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        saveButton.setBackground(new Color(70, 130, 180));
-        saveButton.setForeground(Color.WHITE);
+        JTextField phoneText = new JTextField(20);
+        phoneText.setBounds(100, 60, 165, 25);
+        frame.add(phoneText);
 
-        // Add action listener to the save button
-        saveButton.addActionListener(new ActionListener() {
+        // Button labeled "Start Order"
+        JButton orderButton = new JButton("Start Order");
+        orderButton.setBounds(100, 100, 120, 25);
+        frame.add(orderButton);
+
+        // Action listener for the button
+        orderButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String name = nameField.getText();
-                if (name.isEmpty()) {
-                    JOptionPane.showMessageDialog(frame, "Name cannot be empty!", "Error", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    // Save the name to the database
-                    saveNameToDatabase(name);
-                    JOptionPane.showMessageDialog(frame, "Name saved successfully!");
-                }
+                String userName = userText.getText();
+                String phoneNumber = phoneText.getText();
+
+                // Call method to insert the data into MySQL database
+                insertIntoDatabase(userName, phoneNumber);
+
+                JOptionPane.showMessageDialog(null, "User: " + userName + "\nPhone: " + phoneNumber);
             }
         });
 
-        // Add components to the panel
-        panel.add(label);
-        panel.add(Box.createRigidArea(new Dimension(0, 20))); // Space between label and text field
-        panel.add(nameField);
-        panel.add(Box.createRigidArea(new Dimension(0, 20))); // Space between text field and button
-        panel.add(saveButton);
-
-        // Add the panel to the frame
-        frame.add(panel, BorderLayout.CENTER);
+        // Make the frame visible
         frame.setVisible(true);
     }
 
-    // Method to save the name into the PostgreSQL database
-    private static void saveNameToDatabase(String name) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
+    // Method to handle the database connection and insert data
+    private static void insertIntoDatabase(String name, String phone) {
+        String url = "jdbc:mysql://localhost:3306/userdemo";
+        String username = "root";
+        String password = "mySQL1234$s-10763";
 
         try {
-            // Database connection
-            String url = "jdbc:postgresql://localhost:5432/postgres"; // Replace with your actual database URL
-            String user = "postgres"; // Replace with your actual username
-            String password = "password123"; // Replace with your actual password
+            Class.forName("com.mysql.cj.jdbc.Driver");
 
-            conn = DriverManager.getConnection(url, user, password);
+            Connection con = DriverManager.getConnection(url, username, password);
+            Statement stat = con.createStatement();
 
-            // SQL INSERT query to save the name
-            String sql = "INSERT INTO demoTable1 VALUES id"; // Replace 'your_table_name' with your actual table name
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, name);
+            // Insert user data into the table
+            String query = "insert into demotableuser values('" + name + "'," + phone + ");";
+            stat.executeUpdate(query);
 
-            // Execute the query
-            pstmt.executeUpdate();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        } finally {
-            // Close resources
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            // Fetch and print all records from the table
+            ResultSet resultSet = stat.executeQuery("select * from demotableuser");
+            while (resultSet.next()) {
+                System.out.println(resultSet.getString(1) + " " + resultSet.getInt(2));
             }
+
+            // Close the connection
+            con.close();
+        } catch (Exception e) {
+            System.out.println(e);
         }
     }
 }
